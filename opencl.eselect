@@ -71,7 +71,7 @@ set_new_implementation() {
     fi
 
 	for x in $(list_libdirs) ; do
-		echo "${ROOT}/usr/${x}/libOpenCL.so"
+		#echo "${ROOT}/usr/${x}/libOpenCL.so"
 		if  [[ ${x} = "lib64" ]] ; then
 			libdir="x86_64"
 		else
