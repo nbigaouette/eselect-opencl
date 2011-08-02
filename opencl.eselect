@@ -77,7 +77,7 @@ set_new_implementation() {
 		else
 			libdir="x86"
 		fi
-		[[ -h ${ROOT}/usr/${x}/libOpenCL.so ]] && rm -f ${ROOT}/usr/${x}/libOpenCL.so
+		rm -f ${ROOT}/usr/${x}/libOpenCL.so
 		case ${cl_implem} in
 			nvidia)
 				linkfile=$(relative_name "/usr/${x}/libOpenCL.so.1" "/usr/${x}/")
