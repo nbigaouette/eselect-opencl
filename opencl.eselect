@@ -6,8 +6,8 @@ inherit multilib package-manager config
 
 # Eselect data
 DESCRIPTION="Manage the OpenCL implementation used by your system"
-MAINTAINER="grimmlin@pentoo.ch"
-VERSION=0.0.3
+MAINTAINER="nbigaouette@gmail.com"
+VERSION=0.1
 
 # Our data
 ENV_FILE="${ROOT}/etc/env.d/03opencl"
