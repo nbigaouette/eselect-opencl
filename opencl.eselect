@@ -66,6 +66,10 @@ set_new_implementation() {
 		rm -f "${ENV_FILE}" || die -q "Failed to remove ${ENV_FILE}"
 	fi
 
+    if has nvidia ${avail_implems}; then
+        echo "WARNING: x11-drivers/nvidia-drivers still owns /usr/lib*/libOpenCL.so*!!!"
+    fi
+
 	for x in $(list_libdirs) ; do
 		echo "${ROOT}/usr/${x}/libOpenCL.so"
 		if  [[ ${x} = "lib64" ]] ; then
