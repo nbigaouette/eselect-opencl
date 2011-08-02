@@ -88,7 +88,7 @@ set_new_implementation() {
 				linkfile=$(relative_name "/usr/${x}/libOpenCL.so.1" "/usr/${x}/")
 				ln -s "${linkfile}"  "/usr/${x}/libOpenCL.so"
 			;;
-			ati)
+			amd)
 				linkfile=$(relative_name "/opt/ati-stream-sdk/lib/${libdir}/libOpenCL.so" "/usr/${x}/")
 				ln -s "${linkfile}"  "/usr/${x}/"
 			;;
