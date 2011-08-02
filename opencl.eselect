@@ -5,7 +5,7 @@
 inherit multilib package-manager config
 
 # Eselect data
-DESCRIPTION="Manage the OpenCL implementation used by your system"
+DESCRIPTION="Manages different OpenCL implementation installations"
 MAINTAINER="nbigaouette@gmail.com"
 VERSION=0.1
 
