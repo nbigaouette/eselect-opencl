@@ -86,7 +86,7 @@ set_new_implementation() {
 		esac
 	done
 
-	store_config ${ENV_FILE} OPENGL_PROFILE "${gl_implem}"
+	store_config ${ENV_FILE} OPENCL_PROFILE "${cl_implem}"
 
 	echo " done"
 }
