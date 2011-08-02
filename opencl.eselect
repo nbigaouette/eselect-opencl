@@ -1,0 +1,198 @@
+# -*-eselect-*-  vim: ft=eselect
+# Copyright 2010 Pentoo
+# Distributed under the terms of the GNU General Public License v2
+# This version is somewhat quick and dirty, it has hardcoded path and whatnot
+inherit multilib package-manager config
+
+# Eselect data
+DESCRIPTION="Manage the OpenCL implementation used by your system"
+MAINTAINER="grimmlin@pentoo.ch"
+VERSION=0.0.1
+
+# Our data
+ENV_FILE="${ROOT}/etc/env.d/03opencl"
+PREFIX="${ROOT}/usr"
+DST_PREFIX="${ROOT}/usr"
+OCL_IMPLEMENTATIONS="/etc/OpenCL/vendors"
+ATI_STREAM="/opt/ati-stream-sdk/lib/"
+NVIDIA_CUDA="/usr/"
+
+get_current_implementation() {
+	local ret
+	local opencl_profile=$(load_config "${ENV_FILE}" OPENCL_PROFILE)
+
+	if [[ -n ${opencl_profile} ]] ; then
+		ret="${opencl_profile}"
+	fi
+
+	echo ${ret}
+}
+
+get_implementations() {
+	local ret implem 
+	if [[ ! -e  ${OCL_IMPLEMENTATIONS} ]] ; then
+		echo ""
+		exit
+	fi
+	for implem in "${OCL_IMPLEMENTATIONS}"/*; do
+		implem=${implem##*vendors/}
+		implem=${implem%%\.icd}
+		implem=${implem%%ocl*}
+		has ${implem} ${ret} && continue
+		ret=${ret:+${ret} }${implem}
+	done
+
+	echo ${ret}
+}
+
+set_new_implementation() {
+	local cl_implem=${1}
+	local avail_implems=$(get_implementations)
+	local libdir
+	local cl_local
+	local moduledir
+
+	# Set a sane umask... bug #83115
+	umask 022
+
+	if ! has ${cl_implem} ${avail_implems}; then
+		die -q "Invalid opencl implementation selected."
+	fi
+
+	echo -n "Switching to ${cl_implem} OpenCL interface..."
+	if [[ -f ${ENV_FILE} ]] ; then
+		rm -f "${ENV_FILE}" || die -q "Failed to remove ${ENV_FILE}"
+	fi
+
+	for x in $(list_libdirs) ; do
+		echo "${ROOT}/usr/${x}/libOpenCL.so"
+		if  [[ ${x} = "lib64" ]] ; then
+			libdir="x86_64"
+		else
+			libdir="x86"
+		fi
+		[[ -h ${ROOT}/usr/${x}/libOpenCL.so ]] && rm -f ${ROOT}/usr/${x}/libOpenCL.so
+		case ${cl_implem} in
+			nvidia)
+				linkfile=$(relative_name "/usr/${x}/libOpenCL.so.1" "/usr/${x}/")
+				ln -s "${linkfile}"  "/usr/${x}/libOpenCL.so"
+			;;
+			ati)
+				linkfile=$(relative_name "/opt/ati-stream-sdk/lib/${libdir}/libOpenCL.so" "/usr/${x}/")
+				ln -s "${linkfile}"  "/usr/${x}/"
+			;;
+		esac
+	done
+
+	store_config ${ENV_FILE} OPENGL_PROFILE "${gl_implem}"
+
+	echo " done"
+}
+
+### show action ###
+describe_show() {
+	echo "Print the current OpenCL implementation."
+}
+
+do_show() {
+	local current=$(get_current_implementation)
+	if [[ -n ${current} ]] ; then
+		echo ${current}
+		return 0
+	else
+		echo "(none)"
+		return 2
+	fi
+}
+
+### list action ###
+describe_list() {
+	echo "List the available OpenCL implementations."
+}
+
+do_list() {
+	local i targets=( $(get_implementations) )
+	write_list_start "Available OpenCL implementations:"
+	for (( i = 0; i < ${#targets[@]}; i++ )); do
+		[[ ${targets[i]} = $(get_current_implementation) ]] \
+			&& targets[i]=$(highlight_marker "${targets[i]}")
+	done
+	write_numbered_list -m "(none found)" "${targets[@]}"
+}
+
+### set action ###
+describe_set() {
+	echo "Select the OpenCL implementation."
+}
+
+describe_set_parameters() {
+	echo "<target>"
+}
+
+describe_set_options() {
+	echo "<target> : The profile to activate"
+	echo "--use-old : If an implementation is already set, use that one instead"
+	echo "--prefix=<val> : Set the source prefix (default: /usr)"
+	echo "--dst-prefix=<val> : Set the destination prefix (default: /usr)"
+}
+
+do_set() {
+	local action="error"
+	local current=$(get_current_implementation)
+	local available=$(get_implementations)
+	local new
+
+	while [[ ${#@} -gt 0 ]] ; do
+		local opt=${1}
+		shift
+		case ${opt} in
+			--use-old)
+				if [[ -n ${current} ]] && has ${current} ${available}; then
+					action="old-implementation"
+				fi
+			;;
+			--prefix=*)
+				PREFIX=${ROOT}${opt#*=}
+				available=$(get_implementations)
+			;;
+			--dst-prefix=*)
+				DST_PREFIX=${ROOT}${opt#*=}
+			;;
+			*)
+				if [[ ${action} != "old-implementation" ]] ; then
+					action="set-implementation"
+				fi
+
+				if is_number ${opt} ; then
+					targets=( $(get_implementations) )
+					new=${targets[$(( ${opt} - 1 ))]}
+					if [[ -z ${new} ]] ; then
+						die -q "Unrecognized option: ${opt}"
+					fi
+				elif has ${opt} ${available}; then
+					new="${opt}"
+				else
+					die -q "Unrecognized option: ${opt}"
+				fi
+			;;
+		esac
+	done
+
+	case ${action} in
+		old-implementation)
+			set_new_implementation ${current}
+			return $?
+		;;
+		set-implementation)
+			if [[ -n ${new} ]] ; then
+				set_new_implementation ${new}
+				return $?
+			else
+				die -q "Please specify an implementation to set"
+			fi
+		;;
+		*)
+			die -q "Invalid usage of set action."
+		;;
+	esac
+}
