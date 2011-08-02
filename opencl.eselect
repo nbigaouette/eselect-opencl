@@ -89,6 +89,11 @@ set_new_implementation() {
 	store_config ${ENV_FILE} OPENCL_PROFILE "${cl_implem}"
 
 	echo " done"
+
+    echo "Make sure to update the environment variables:"
+    echo "    # env-update"
+    echo "and source /etc/profile in any open shells:"
+    echo "    $ source /etc/profile && source ~/.bashrc"
 }
 
 ### show action ###
