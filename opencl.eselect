@@ -84,6 +84,7 @@ set_new_implementation() {
         # Create new symbolic link
 		case ${cl_implem} in
 			nvidia)
+                # FIXME: x11-drivers/nvidia-drivers owns libOpenCL.so, libOpenCL.so.1 and libOpenCL.so.1.0.0
 				linkfile=$(relative_name "/usr/${x}/libOpenCL.so.1" "/usr/${x}/")
 				ln -s "${linkfile}"  "/usr/${x}/libOpenCL.so"
 			;;
