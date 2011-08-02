@@ -7,15 +7,17 @@ inherit multilib package-manager config
 # Eselect data
 DESCRIPTION="Manage the OpenCL implementation used by your system"
 MAINTAINER="grimmlin@pentoo.ch"
-VERSION=0.0.2
+VERSION=0.0.3
 
 # Our data
 ENV_FILE="${ROOT}/etc/env.d/03opencl"
 PREFIX="${ROOT}/usr"
 DST_PREFIX="${ROOT}/usr"
 OCL_IMPLEMENTATIONS="/etc/OpenCL/vendors"
-ATI_STREAM="/opt/ati-stream-sdk/lib/"
-NVIDIA_CUDA="/usr/"
+
+AMD_APP="/usr/lib/amd"
+# NVIDIA_CUDA="/usr"
+INTEL_OCL_SDK="/opt/intel/opencl-sdk"
 
 get_current_implementation() {
 	local ret
@@ -59,34 +61,50 @@ set_new_implementation() {
 		die -q "Invalid opencl implementation selected."
 	fi
 
-	echo -n "Switching to ${cl_implem} OpenCL interface..."
+	echo "Switching to \"${cl_implem}\" OpenCL interface..."
 	if [[ -f ${ENV_FILE} ]] ; then
 		rm -f "${ENV_FILE}" || die -q "Failed to remove ${ENV_FILE}"
 	fi
 
+    if has nvidia ${avail_implems}; then
+        echo "WARNING: x11-drivers/nvidia-drivers still owns /usr/lib*/libOpenCL.so*!!!"
+    fi
+
 	for x in $(list_libdirs) ; do
-		echo "${ROOT}/usr/${x}/libOpenCL.so"
+		#echo "${ROOT}/usr/${x}/libOpenCL.so"
 		if  [[ ${x} = "lib64" ]] ; then
 			libdir="x86_64"
 		else
 			libdir="x86"
 		fi
-		[[ -h ${ROOT}/usr/${x}/libOpenCL.so ]] && rm -f ${ROOT}/usr/${x}/libOpenCL.so
+
+        # Delete old file/link
+		rm -f ${ROOT}/usr/${x}/libOpenCL.so
+
+        # Create new symbolic link
 		case ${cl_implem} in
 			nvidia)
+                # FIXME: x11-drivers/nvidia-drivers owns libOpenCL.so, libOpenCL.so.1 and libOpenCL.so.1.0.0
 				linkfile=$(relative_name "/usr/${x}/libOpenCL.so.1" "/usr/${x}/")
 				ln -s "${linkfile}"  "/usr/${x}/libOpenCL.so"
 			;;
-			ati)
-				linkfile=$(relative_name "/opt/ati-stream-sdk/lib/${libdir}/libOpenCL.so" "/usr/${x}/")
-				ln -s "${linkfile}"  "/usr/${x}/"
+			amd)
+                ln -s "${AMD_APP}/libOpenCL.so" "/usr/${x}/"
 			;;
+            intel)
+                ln -s "${INTEL_OCL_SDK}/libOpenCL.so" "/usr/${x}/"
+            ;;
 		esac
 	done
 
-	store_config ${ENV_FILE} OPENGL_PROFILE "${gl_implem}"
+	store_config ${ENV_FILE} OPENCL_PROFILE "${cl_implem}"
 
 	echo " done"
+
+    echo "Make sure to update the environment variables:"
+    echo "    # env-update"
+    echo "and source /etc/profile in any open shells:"
+    echo "    $ source /etc/profile && source ~/.bashrc"
 }
 
 ### show action ###
