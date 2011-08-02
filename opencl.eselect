@@ -16,6 +16,7 @@ DST_PREFIX="${ROOT}/usr"
 OCL_IMPLEMENTATIONS="/etc/OpenCL/vendors"
 ATI_STREAM="/opt/ati-stream-sdk/lib/"
 NVIDIA_CUDA="/usr/"
+INTEL_OCL_SDK="/opt/intel/opencl-sdk/"
 
 get_current_implementation() {
 	local ret
